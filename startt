@@ -1,7 +1,19 @@
 #!/bin/bash
-set -e
 
-source /venv/main/bin/activate
+# 1. МАГІЯ ЛОГУВАННЯ: дублюємо всі дії у файл на диску і в консоль Vast
+exec > >(tee -a /workspace/provisioning.log) 2>&1
+# Вмикаємо відображення кожної команди (щоб ти бачив, що саме зараз виконується)
+set -x 
+
+echo "=== Початок скрипта. Лог також пишеться у /workspace/provisioning.log ==="
+
+# 2. БЕЗПЕЧНА АКТИВАЦІЯ VENV (без тихої смерті, якщо папки немає)
+if [ -f "/venv/main/bin/activate" ]; then
+    source /venv/main/bin/activate
+    echo "Venv successfully activated."
+else
+    echo "WARNING: /venv/main/bin/activate not found. Proceeding with default Python."
+fi
 
 WORKSPACE=${WORKSPACE:-/workspace}
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
@@ -22,11 +34,12 @@ cd "${COMFYUI_DIR}"
 # 2. Install base requirements
 # ─────────────────────────────────────────────
 if [[ -f requirements.txt ]]; then
+    echo "Installing ComfyUI requirements..."
     pip install --no-cache-dir -r requirements.txt
 fi
 
 # ─────────────────────────────────────────────
-# 3. CONFIG
+# 3. CONFIG (Масиви залишив твої, тут усе чітко)
 # ─────────────────────────────────────────────
 NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
@@ -97,20 +110,23 @@ DETECTION_MODELS=(
     "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"
     "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_data.bin"
 )
+
 # ─────────────────────────────────────────────
-# 4. FUNCTIONS
+# 4. FUNCTIONS (ТУТ ВИПРАВЛЕНО ПРОГРЕС-БАР ДЛЯ ВЕБ-ЛОГІВ)
 # ─────────────────────────────────────────────
 download_files() {
     local dir="$1"
     shift
     mkdir -p "$dir"
-for url in "$@"; do
+    for url in "$@"; do
+        echo "======================================"
         echo "Downloading: $url"
+        echo "======================================"
         if [[ -n "$HF_TOKEN" && "$url" =~ huggingface.co ]]; then
-            wget --header="Authorization: Bearer $HF_TOKEN" \
+            wget -q --show-progress --progress=dot:giga --header="Authorization: Bearer $HF_TOKEN" \
                  -nc --content-disposition -P "$dir" "$url"
         else
-            wget -nc --content-disposition -P "$dir" "$url"
+            wget -q --show-progress --progress=dot:giga -nc --content-disposition -P "$dir" "$url"
         fi
     done
 }
@@ -118,6 +134,7 @@ for url in "$@"; do
 # ─────────────────────────────────────────────
 # 5. Custom nodes
 # ─────────────────────────────────────────────
+echo "=== Installing Custom Nodes ==="
 mkdir -p custom_nodes
 
 for repo in "${NODES[@]}"; do
@@ -133,18 +150,21 @@ for repo in "${NODES[@]}"; do
         git clone "$repo" "$path" --recursive
     fi
 
-    [[ -f "$requirements" ]] && pip install --no-cache-dir -r "$requirements"
+    if [[ -f "$requirements" ]]; then
+        echo "Installing requirements for $dir..."
+        pip install --no-cache-dir -r "$requirements"
+    fi
 done
 
 # ─────────────────────────────────────────────
-# 6. Download models (ПРАВИЛЬНЫЕ ПУТИ)
+# 6. Download models
 # ─────────────────────────────────────────────
+echo "=== Downloading Models (This will take a while) ==="
 
 mkdir -p models/detection
 
 download_files "models/diffusion_models" "${WAN_JSON_MODELS[@]}"
 download_files "models/diffusion_models" "${WAN_FP8_MODELS[@]}"
-
 download_files "models/loras" "${LORA_MODELS[@]}"
 download_files "models/vae" "${VAE_MODELS[@]}"
 download_files "models/clip_vision" "${CLIP_VISION_MODELS[@]}"
@@ -160,5 +180,8 @@ download_files "models/detection" "${DETECTION_MODELS[@]}"
 # ─────────────────────────────────────────────
 # 7. Launch
 # ─────────────────────────────────────────────
-echo "=== Starting ComfyUI ==="
+echo "=========================================================="
+echo "=== ЗАВАНТАЖЕННЯ ЗАВЕРШЕНО! ЗАПУСКАЄМО COMFYUI НА 8188 ==="
+echo "=========================================================="
+
 python main.py --listen 0.0.0.0 --port 8188
