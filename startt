@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# 1. МАГІЯ ЛОГУВАННЯ: дублюємо всі дії у файл на диску і в консоль Vast
 exec > >(tee -a /workspace/provisioning.log) 2>&1
-# Вмикаємо відображення кожної команди (щоб ти бачив, що саме зараз виконується)
 set -x 
 
 echo "=== Початок скрипта. Лог також пишеться у /workspace/provisioning.log ==="
 
-# 2. БЕЗПЕЧНА АКТИВАЦІЯ VENV (без тихої смерті, якщо папки немає)
 if [ -f "/venv/main/bin/activate" ]; then
     source /venv/main/bin/activate
     echo "Venv successfully activated."
@@ -39,7 +36,7 @@ if [[ -f requirements.txt ]]; then
 fi
 
 # ─────────────────────────────────────────────
-# 3. CONFIG (Масиви залишив твої, тут усе чітко)
+# 3. CONFIG
 # ─────────────────────────────────────────────
 NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
@@ -112,7 +109,7 @@ DETECTION_MODELS=(
 )
 
 # ─────────────────────────────────────────────
-# 4. FUNCTIONS (ТУТ ВИПРАВЛЕНО ПРОГРЕС-БАР ДЛЯ ВЕБ-ЛОГІВ)
+# 4. FUNCTIONS
 # ─────────────────────────────────────────────
 download_files() {
     local dir="$1"
