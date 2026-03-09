@@ -48,6 +48,8 @@ NODES=(
     "https://github.com/kijai/ComfyUI-WanAnimatePreprocess"
     "https://github.com/Fannovel16/comfyui_controlnet_aux"
     "https://github.com/GACLove/ComfyUI-VFI"
+    "https://github.com/teskor-hub/comfyui-teskors-utils"
+    "https://github.com/kijai/ComfyUI-segment-anything-2.git"
 )
 
 WAN_JSON_MODELS=(
@@ -106,6 +108,10 @@ DETECTION_MODELS=(
     "https://huggingface.co/Wan-AI/Wan2.2-Animate-14B/resolve/main/process_checkpoint/det/yolov10m.onnx"
     "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"
     "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_data.bin"
+)
+
+CONTROL_NET=(
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_Uni3C_controlnet_fp16.safetensors"
 )
 
 # ─────────────────────────────────────────────
@@ -173,6 +179,7 @@ download_files "models/text_encoders" "${TEXT_ENCODER_FP8[@]}"
 download_files "models/vae" "${VAE_MODELS_NEW[@]}"
 download_files "models/clip_vision" "${CLIP_VISION_NEW[@]}"
 download_files "models/detection" "${DETECTION_MODELS[@]}"
+download_files "models/controlnet" "${CONTROL_NET[@]}"
 
 # ─────────────────────────────────────────────
 # 7. Launch
